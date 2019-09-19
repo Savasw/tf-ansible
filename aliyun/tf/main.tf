@@ -23,7 +23,7 @@ resource "alicloud_security_group" "group" {
 resource "alicloud_security_group_rule" "allow_all_tcp" {
   type              = "ingress"
   ip_protocol       = "tcp"
-  nic_type          = "internet"
+  nic_type          = "intranet"
   policy            = "accept"
   port_range        = "1/65535"
   priority          = 1
@@ -42,29 +42,35 @@ resource "alicloud_instance" "instance" {
   security_groups   = ["${alicloud_security_group.group.id}"]
 
   # series III
-  instance_type              = "ecs.n1.tiny"
+  instance_type              = "ecs.n1.medium"
   system_disk_category       = "cloud_efficiency"
-  image_id                   = "ubuntu_16_04_64_20G_alibase_20190620.vhd"
+  image_id                   = "centos_7_06_64_20G_alibase_20190711.vhd"
   instance_name              = "tf_ansible"
   vswitch_id                 = "${alicloud_vswitch.vswitch.id}"
   internet_max_bandwidth_out = 5
   key_name  = "${alicloud_key_pair.publickey.key_name}"
 
   connection {
+      host     = "${self.public_ip}"
       type        = "ssh"
       user        = "root"
       private_key = "${file(var.ssh_key_private)}"
   }
 
   provisioner "remote-exec" {
-    inline = ["sudo apt-get -qq install python -y"]
-
+    inline = ["echo 'Hello World'"]
   }
-  provisioner "local-exec" {
-    command = "ansible-playbook -u root -i '${self.public_ip},' --private-key ${var.ssh_key_private} ../playbooks/install_java.yaml" 
-  }
+  # provisioner "local-exec" {
+  #   command = "ansible-playbook -u root -i '${self.public_ip},' --private-key ${var.ssh_key_private} ../playbooks/install_jenkins_centos.yml" 
+  # }
 
   provisioner "local-exec" {
-    command = "ansible-playbook -u root -i '${self.public_ip},' --private-key ${var.ssh_key_private} ../playbooks/install_jenkins.yaml" 
+    command = <<EOT
+	  >jenkins-ci.ini;
+	  echo "[jenkins-ci]" | tee -a jenkins-ci.ini;
+	  echo "${self.public_ip} ansible_user=${var.ansible_user} ansible_ssh_private_key_file=${var.ssh_key_private}" | tee -a jenkins-ci.ini;
+      export ANSIBLE_HOST_KEY_CHECKING=False;
+	  ansible-playbook -u ${var.ansible_user} --private-key ${var.ssh_key_private} -i jenkins-ci.ini ../playbooks/centos/install_jenkins.yaml
+    EOT
   }
 }
