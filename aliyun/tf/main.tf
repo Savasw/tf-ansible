@@ -70,7 +70,7 @@ resource "alicloud_instance" "instance" {
 	  echo "[jenkins-ci]" | tee -a jenkins-ci.ini;
 	  echo "${self.public_ip} ansible_user=${var.ansible_user} ansible_ssh_private_key_file=${var.ssh_key_private}" | tee -a jenkins-ci.ini;
       export ANSIBLE_HOST_KEY_CHECKING=False;
-	  ansible-playbook -u ${var.ansible_user} --private-key ${var.ssh_key_private} -i jenkins-ci.ini ../playbooks/centos/install_jenkins.yaml
+	  ansible-playbook -u ${var.ansible_user} --private-key ${var.ssh_key_private} -i jenkins-ci.ini ../playbooks/centos/install_jenkins.yml
     EOT
   }
 }
