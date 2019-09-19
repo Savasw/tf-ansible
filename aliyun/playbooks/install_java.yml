@@ -1,5 +1,5 @@
 ---
-- name: Install Oracle Java version 8
+- name: Install Oracle Java version 8.0
   hosts: java
   become: true
   
